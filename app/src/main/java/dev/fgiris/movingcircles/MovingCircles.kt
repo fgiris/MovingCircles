@@ -1,7 +1,10 @@
 package dev.fgiris.movingcircles
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.center
@@ -18,6 +21,38 @@ fun MovingCircles(
     circleColor: Color,
     circleRadius: Float
 ) {
+    // Lets move the circles from center by the half of the distance to center
+//    val movementDistanceState = animateFloatAsState(
+//        targetValue = 400f,
+//        animationSpec = tween(
+//            durationMillis = 10000,
+//            easing = LinearEasing
+//        )
+//    )
+
+    // Initial transition state
+    val circleTransitionState = remember {
+        mutableStateOf(MovingCirclesAnimationState.COLLAPSED)
+    }
+
+    // Create the transition
+    val circleTransition = updateTransition(circleTransitionState.value)
+
+    // Define the animation
+    val movementDistanceState = circleTransition.animateFloat(
+        transitionSpec = {
+            tween(
+                durationMillis = 2000,
+                easing = FastOutSlowInEasing
+            )
+        }
+    ) {
+        if (it == MovingCirclesAnimationState.COLLAPSED) 0f else distanceToCenter / 2
+    }
+
+    // Start the animation
+    circleTransitionState.value = MovingCirclesAnimationState.EXPANDED
+
     Canvas(modifier = modifier) {
         drawCircles(
             drawScope = this,
@@ -25,7 +60,8 @@ fun MovingCircles(
             centerOfCircles = size.center,
             distanceToCenter = distanceToCenter,
             circleColor = circleColor,
-            circleRadius = circleRadius
+            circleRadius = circleRadius,
+            movementDistance = movementDistanceState.value
         )
     }
 }
@@ -36,7 +72,8 @@ private fun drawCircles(
     centerOfCircles: Offset,
     distanceToCenter: Float,
     circleColor: Color,
-    circleRadius: Float
+    circleRadius: Float,
+    movementDistance: Float
 ) {
     // We will use this to shift the center og the each circle
     val angleBetweenCircles = Math.toRadians(360.0 / numberOfCircles).toFloat()
@@ -45,8 +82,8 @@ private fun drawCircles(
     var currentAngle = 0f
 
     repeat(numberOfCircles) {
-        val x = centerOfCircles.x + distanceToCenter * sin(currentAngle)
-        val y = centerOfCircles.y + distanceToCenter * cos(currentAngle)
+        val x = centerOfCircles.x + (distanceToCenter + movementDistance) * sin(currentAngle)
+        val y = centerOfCircles.y + (distanceToCenter + movementDistance) * cos(currentAngle)
 
         // Draw the circle
         drawScope.drawCircle(
@@ -57,4 +94,8 @@ private fun drawCircles(
 
         currentAngle += angleBetweenCircles
     }
+}
+
+enum class MovingCirclesAnimationState {
+    COLLAPSED, EXPANDED
 }
