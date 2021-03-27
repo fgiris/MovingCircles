@@ -21,15 +21,6 @@ fun MovingCircles(
     circleColor: Color,
     circleRadius: Float
 ) {
-    // Lets move the circles from center by the half of the distance to center
-//    val movementDistanceState = animateFloatAsState(
-//        targetValue = 400f,
-//        animationSpec = tween(
-//            durationMillis = 10000,
-//            easing = LinearEasing
-//        )
-//    )
-
     // Initial transition state
     val circleTransitionState = remember {
         mutableStateOf(MovingCirclesAnimationState.COLLAPSED)
@@ -38,7 +29,7 @@ fun MovingCircles(
     // Create the transition
     val circleTransition = updateTransition(circleTransitionState.value)
 
-    // Define the animation
+    // Circle expansion animation
     val movementDistanceState = circleTransition.animateFloat(
         transitionSpec = {
             tween(
@@ -48,6 +39,18 @@ fun MovingCircles(
         }
     ) {
         if (it == MovingCirclesAnimationState.COLLAPSED) 0f else distanceToCenter / 2
+    }
+
+    // Circle rotation animation
+    val rotationAngleState = circleTransition.animateFloat(
+        transitionSpec = {
+            tween(
+                durationMillis = 2500,
+                easing = LinearEasing
+            )
+        }
+    ) {
+        if (it == MovingCirclesAnimationState.COLLAPSED) 0f else -20f
     }
 
     // Start the animation
@@ -61,7 +64,8 @@ fun MovingCircles(
             distanceToCenter = distanceToCenter,
             circleColor = circleColor,
             circleRadius = circleRadius,
-            movementDistance = movementDistanceState.value
+            movementDistance = movementDistanceState.value,
+            rotationAngle = rotationAngleState.value
         )
     }
 }
@@ -73,13 +77,16 @@ private fun drawCircles(
     distanceToCenter: Float,
     circleColor: Color,
     circleRadius: Float,
-    movementDistance: Float
+    movementDistance: Float,
+    rotationAngle: Float
 ) {
     // We will use this to shift the center og the each circle
     val angleBetweenCircles = Math.toRadians(360.0 / numberOfCircles).toFloat()
 
+    val rotationAngleInRadians = Math.toRadians(rotationAngle.toDouble()).toFloat()
+
     // Used to draw circles to the right place by adding angleBetweenCircles to the currentAngle
-    var currentAngle = 0f
+    var currentAngle = 0f + rotationAngleInRadians
 
     repeat(numberOfCircles) {
         val x = centerOfCircles.x + (distanceToCenter + movementDistance) * sin(currentAngle)
