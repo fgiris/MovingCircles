@@ -25,7 +25,7 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier
                             .fillMaxWidth()
                             .fillMaxHeight(),
-                        numberOfCircles = 24,
+                        numberOfCircles = 32,
                         distanceToCenter = 200f,
                         circleColor = Color.Black,
                         circleRadius = 10f

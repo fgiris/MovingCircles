@@ -1,15 +1,20 @@
 package dev.fgiris.movingcircles
 
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.center
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -21,51 +26,64 @@ fun MovingCircles(
     circleColor: Color,
     circleRadius: Float
 ) {
-    // Initial transition state
-    val circleTransitionState = remember {
-        mutableStateOf(MovingCirclesAnimationState.COLLAPSED)
-    }
-
     // Create the transition
-    val circleTransition = updateTransition(circleTransitionState.value)
-
-    // Circle expansion animation
-    val movementDistanceState = circleTransition.animateFloat(
-        transitionSpec = {
-            tween(
-                durationMillis = 2000,
-                easing = FastOutSlowInEasing
-            )
-        }
-    ) {
-        if (it == MovingCirclesAnimationState.COLLAPSED) 0f else distanceToCenter / 2
+    val circleExplodeAnimatable = remember {
+        Animatable(initialValue = 0f)
     }
 
-    // Circle rotation animation
-    val rotationAngleState = circleTransition.animateFloat(
-        transitionSpec = {
-            tween(
-                durationMillis = 2500,
-                easing = LinearEasing
-            )
-        }
-    ) {
-        if (it == MovingCirclesAnimationState.COLLAPSED) 0f else -20f
+    val circleRotationAnimatable = remember {
+        Animatable(initialValue = 0f)
     }
 
-    val circleAlphaState = circleTransition.animateFloat(
-        transitionSpec = {
-            tween(
-                durationMillis = 2500,
-                easing = LinearEasing
-            )
-        }
-    ) {
-        if (it == MovingCirclesAnimationState.COLLAPSED) 1f else 0f
+    val circleAlphaAnimatable = remember {
+        Animatable(initialValue = 1f)
     }
 
-    // Start the animation
-    circleTransitionState.value = MovingCirclesAnimationState.EXPANDED
+    LaunchedEffect(Unit) {
+        val explodeAnimationDuration = 2000L
+        val fadeOutAnimationDuration = 1000L
+
+        // During the whole animation, there will be rotation
+        // So total animation duration = rotate animation duration
+        val rotateAnimationDuration = 4000L
+
+        // Kind of hack about delay. Fade in should be happening for the last 1 sec
+        // This delay is used after explode animation in order to wait for the last
+        // 1 sec of the animation
+        val fadeOutDelayDuration = rotateAnimationDuration - (fadeOutAnimationDuration + explodeAnimationDuration)
+
+        // Start explode and rotate animation at the same time
+        // launching different coroutines for each
+        launch {
+            circleExplodeAnimatable.animateTo(
+                targetValue = distanceToCenter / 2,
+                animationSpec = tween(
+                    durationMillis = 2000,
+                    easing = FastOutSlowInEasing
+                )
+            )
+            // Need to delay for the difference between the
+            delay(fadeOutDelayDuration)
+
+            circleAlphaAnimatable.animateTo(
+                targetValue = 0f,
+                animationSpec = tween(
+                    durationMillis = 1000,
+                    easing = LinearEasing
+                )
+            )
+        }
+
+        launch {
+            circleRotationAnimatable.animateTo(
+                targetValue = -20f,
+                animationSpec = tween(
+                    durationMillis = 4000,
+                    easing = FastOutSlowInEasing
+                )
+            )
+        }
+    }
 
     Canvas(modifier = modifier) {
         drawCircles(
@@ -75,9 +93,9 @@ fun MovingCircles(
             distanceToCenter = distanceToCenter,
             circleColor = circleColor,
             circleRadius = circleRadius,
-            movementDistance = movementDistanceState.value,
-            rotationAngle = rotationAngleState.value,
-            alpha = circleAlphaState.value
+            circleExplodeAnimatableValue = circleExplodeAnimatable.value,
+            rotationAngle = circleRotationAnimatable.value,
+            alpha = circleAlphaAnimatable.value
         )
     }
 }
@@ -89,7 +107,7 @@ private fun drawCircles(
     distanceToCenter: Float,
     circleColor: Color,
     circleRadius: Float,
-    movementDistance: Float,
+    circleExplodeAnimatableValue: Float,
     rotationAngle: Float,
     alpha: Float
 ) {
@@ -102,8 +120,10 @@ private fun drawCircles(
     var currentAngle = 0f + rotationAngleInRadians
 
     repeat(numberOfCircles) {
-        val x = centerOfCircles.x + (distanceToCenter + movementDistance) * sin(currentAngle)
-        val y = centerOfCircles.y + (distanceToCenter + movementDistance) * cos(currentAngle)
+        val x =
+            centerOfCircles.x + (distanceToCenter + circleExplodeAnimatableValue) * sin(currentAngle)
+        val y =
+            centerOfCircles.y + (distanceToCenter + circleExplodeAnimatableValue) * cos(currentAngle)
 
         // Draw the circle
         drawScope.drawCircle(
@@ -115,8 +135,4 @@ private fun drawCircles(
 
         currentAngle += angleBetweenCircles
     }
-}
-
-enum class MovingCirclesAnimationState {
-    COLLAPSED, EXPANDED
 }
