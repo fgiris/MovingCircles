@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
+import com.google.android.material.color.MaterialColors
 import dev.fgiris.movingcircles.ui.theme.MovingCirclesTheme
 
 class MainActivity : ComponentActivity() {
@@ -27,7 +28,7 @@ class MainActivity : ComponentActivity() {
                             .fillMaxHeight(),
                         numberOfCircles = 32,
                         distanceToCenter = 200f,
-                        circleColor = Color.Black,
+                        circleColor = MaterialTheme.colors.onBackground,
                         circleRadius = 10f
                     )
                 }
