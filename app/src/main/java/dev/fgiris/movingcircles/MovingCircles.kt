@@ -53,6 +53,17 @@ fun MovingCircles(
         if (it == MovingCirclesAnimationState.COLLAPSED) 0f else -20f
     }
 
+    val circleAlphaState = circleTransition.animateFloat(
+        transitionSpec = {
+            tween(
+                durationMillis = 2500,
+                easing = LinearEasing
+            )
+        }
+    ) {
+        if (it == MovingCirclesAnimationState.COLLAPSED) 1f else 0f
+    }
+
     // Start the animation
     circleTransitionState.value = MovingCirclesAnimationState.EXPANDED
 
@@ -65,7 +76,8 @@ fun MovingCircles(
             circleColor = circleColor,
             circleRadius = circleRadius,
             movementDistance = movementDistanceState.value,
-            rotationAngle = rotationAngleState.value
+            rotationAngle = rotationAngleState.value,
+            alpha = circleAlphaState.value
         )
     }
 }
@@ -78,7 +90,8 @@ private fun drawCircles(
     circleColor: Color,
     circleRadius: Float,
     movementDistance: Float,
-    rotationAngle: Float
+    rotationAngle: Float,
+    alpha: Float
 ) {
     // We will use this to shift the center og the each circle
     val angleBetweenCircles = Math.toRadians(360.0 / numberOfCircles).toFloat()
@@ -96,7 +109,8 @@ private fun drawCircles(
         drawScope.drawCircle(
             color = circleColor,
             center = Offset(x, y),
-            radius = circleRadius
+            radius = circleRadius,
+            alpha = alpha
         )
 
         currentAngle += angleBetweenCircles
